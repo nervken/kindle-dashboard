@@ -240,26 +240,30 @@
         document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 未來 5 天內沒有預約行程</li>';
         return;
       }
-
+    
       var londonDate = getTZDate(1);
       var todayDay = londonDate.getDate();
-
+    
       var html = '';
-      for (var i = 0; i < events.length && i < 5; i++) {
+      // 顯示最多 8 筆，防止內容溢出電子紙框線
+      for (var i = 0; i < events.length && i < 8; i++) {
         var ev = events[i];
         var isToday = (ev.day === todayDay);
         var prefix = isToday ? '[今日] ' : '';
-
+    
         var dateStr = prefix + ev.month + '/' + ev.day + ' ';
         if (ev.isTime && ev.timeStr) {
           dateStr += ev.timeStr + ' ';
         } else {
           dateStr += '(全天) ';
         }
-
-        html += '<li class="calendar-item">• ' + dateStr + (ev.summary || '未命名行程') + '</li>';
+    
+        // 區分 Task 與 Event 的顯示標示
+        var typeTag = (ev.type === 'task') ? '📌 ' : '🗓️ ';
+    
+        html += '<li class="calendar-item">• ' + typeTag + dateStr + (ev.summary || '未命名行程') + '</li>';
       }
-
+    
       document.getElementById('calendar-events-list').innerHTML = html;
     }
 
