@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Kindle Weather & All-Day Calendar Universal Fix</title>
+<title>Kindle Weather & 5-Day Calendar</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -119,10 +119,10 @@
     </table>
   </div>
 
-  <!-- 3. Google 日曆近期預約行程區塊 -->
+  <!-- 3. Google 日曆近期預約行程區塊 (精準 5 日版) -->
   <div class="kindle-box">
     <div style="font-size: 22px; font-weight: 900; border-bottom: 3px solid #000000; padding-bottom: 4px; margin-bottom: 6px;">
-      📅 Google 日曆近期預約行程
+      📅 Google 日曆近期預約行程 (未來 5 日內)
     </div>
     <ul class="calendar-list" id="calendar-events-list">
       <li class="calendar-item" id="cal-status">正在讀取 Google 日曆行程...</li>
@@ -225,7 +225,6 @@
       xhr.send();
     }
 
-    // 正確相容全天行程 DTSTART;VALUE=DATE:... 寫法
     function parseICSData(icsData) {
       if (!icsData) return [];
       var unfoldedData = icsData.replace(/\r\n\s/g, '').replace(/\n\s/g, '');
@@ -271,34 +270,56 @@
       return events;
     }
 
-    // 寬鬆渲染：全面列出全部行程（不設日期攔截，保證全部顯示出來）
+    // 精準過濾：只保留今天 (8/11) 至 未來 5 天內的行程
     function renderCalendarEvents(events) {
       if (!events || events.length === 0) {
-        document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 目前沒有預約行程 (或 Google ICS 為空)</li>';
+        document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 目前沒有預約行程</li>';
         return;
       }
 
-      // 排序
-      events.sort(function(a, b) {
-        if (a.startStr && b.startStr) {
-          return a.startStr.localeCompare(b.startStr);
+      var londonDate = getTZDate(1);
+      // 今天 00:00:00
+      var todayMidnight = new Date(londonDate.getFullYear(), londonDate.getMonth(), londonDate.getDate(), 0, 0, 0);
+      
+      // 未來 5 天 23:59:59
+      var futureLimit = new Date(londonDate.getFullYear(), londonDate.getMonth(), londonDate.getDate() + 5, 23, 59, 59);
+
+      var validEvents = [];
+      for (var i = 0; i < events.length; i++) {
+        var ev = events[i];
+        if (ev.year && ev.month && ev.day) {
+          var evDate = new Date(ev.year, ev.month - 1, ev.day, 0, 0, 0);
+          
+          // 嚴格判定：只收「今天」到「未來 5 天之內」的行程
+          if (evDate >= todayMidnight && evDate <= futureLimit) {
+            validEvents.push(ev);
+          }
         }
-        return 0;
+      }
+
+      // 按日期升序排列 (由近至遠)
+      validEvents.sort(function(a, b) {
+        return a.startStr.localeCompare(b.startStr);
       });
 
       var html = '';
-      for (var e = 0; e < events.length && e < 8; e++) {
-        var ev = events[e];
-        var dateStr = '';
-        if (ev.month && ev.day) {
-          dateStr = ev.month + '/' + ev.day + ' ';
+      if (validEvents.length === 0) {
+        html = '<li class="calendar-item">• 近期 5 天內沒有預約行程</li>';
+      } else {
+        // 最多顯示 5 個行程
+        for (var e = 0; e < validEvents.length && e < 5; e++) {
+          var ev = validEvents[e];
+          var isToday = (ev.year === londonDate.getFullYear() && ev.month === (londonDate.getMonth() + 1) && ev.day === londonDate.getDate());
+          var prefix = isToday ? '[今日] ' : '';
+          
+          var dateStr = prefix + ev.month + '/' + ev.day + ' ';
           if (ev.isTime && ev.timeStr) {
             dateStr += ev.timeStr + ' ';
           } else {
             dateStr += '(全天) ';
           }
+          html += '<li class="calendar-item">• ' + dateStr + (ev.summary || '未命名行程') + '</li>';
         }
-        html += '<li class="calendar-item">• ' + dateStr + (ev.summary || '未命名行程') + '</li>';
       }
 
       document.getElementById('calendar-events-list').innerHTML = html;
