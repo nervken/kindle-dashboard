@@ -57,7 +57,7 @@
     margin: 0;
   }
   .calendar-item {
-    font-size: 20px;
+    font-size: 21px;
     font-weight: 900;
     padding: 5px 0;
     border-bottom: 2px dashed #000000;
@@ -122,7 +122,7 @@
   <!-- 3. Google 日曆近期預約行程區塊 -->
   <div class="kindle-box">
     <div style="font-size: 22px; font-weight: 900; border-bottom: 3px solid #000000; padding-bottom: 4px; margin-bottom: 6px;">
-      📅 Google 日曆近期預約行程 (近期預約)
+      📅 Google 日曆近期預約行程
     </div>
     <ul class="calendar-list" id="calendar-events-list">
       <li class="calendar-item" id="cal-status">正在讀取 Google 日曆行程...</li>
@@ -254,8 +254,9 @@
               var val = line.substring(colonIdx2 + 1).trim();
               var cleanDigits = val.replace(/[^0-9]/g, '');
               if (cleanDigits.length >= 8) {
+                // 完全用純數字比對，避免時區換算誤差
                 currentEvent.startStr = cleanDigits;
-                currentEvent.year = parseInt(cleanDigits.substring(0, 4), 10);
+                currentEvent.numDate = parseInt(cleanDigits.substring(0, 8), 10);
                 currentEvent.month = parseInt(cleanDigits.substring(4, 6), 10);
                 currentEvent.day = parseInt(cleanDigits.substring(6, 8), 10);
                 currentEvent.isTime = (val.indexOf('T') !== -1 && cleanDigits.length >= 12);
@@ -270,31 +271,25 @@
       return events;
     }
 
-    // 智慧型雙重比對：既允許純 YYYYMMDD 比對，也防止時區誤差
+    // 徹底排除時區誤差：用英國當地時間純數字 (20260811) 比對
     function renderCalendarEvents(events) {
       if (!events || events.length === 0) {
-        document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 數據源無任何行程</li>';
+        document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 目前沒有預約行程</li>';
         return;
       }
 
       var londonDate = getTZDate(1);
-      var currentYYYYMMDD = parseInt(londonDate.getFullYear() + padZero(londonDate.getMonth() + 1) + padZero(londonDate.getDate()), 10);
+      // 計算英國當地的今天數字 (如 20260811)
+      var todayNum = parseInt(londonDate.getFullYear() + padZero(londonDate.getMonth() + 1) + padZero(londonDate.getDate()), 10);
+      // 計算放寬 1 天的昨日數字 (如 20260810，防止 UTC 時區提前扣日)
+      var yesterdayNum = todayNum - 1;
 
       var validEvents = [];
-      var debugSample = [];
-
       for (var i = 0; i < events.length; i++) {
         var ev = events[i];
-        if (ev.startStr && ev.startStr.length >= 8) {
-          var evYYYYMMDD = parseInt(ev.startStr.substring(0, 8), 10);
-          
-          // 收集前 3 個行程做 Debug 顯示
-          if (debugSample.length < 3) {
-            debugSample.push(ev.month + '/' + ev.day + ' ' + (ev.summary||''));
-          }
-
-          // 核心條件：日期大於等於今天，且不超過未來 30 天 (大幅放寬，確保能抓到)
-          if (evYYYYMMDD >= currentYYYYMMDD && evYYYYMMDD <= currentYYYYMMDD + 100) {
+        if (ev.numDate) {
+          // 只要行程日期大於等於昨天 (對應夏令時間時區誤差)，且未過太久，通通保留！
+          if (ev.numDate >= yesterdayNum) {
             validEvents.push(ev);
           }
         }
@@ -307,14 +302,12 @@
 
       var html = '';
       if (validEvents.length === 0) {
-        // 如果依然沒有，印出抓到的原始樣貌幫助分析
-        html = '<li class="calendar-item" style="font-size:16px;">• 近期無行程 [Debug: 抓到 ' + events.length + ' 個，範例: ' + debugSample.join(' | ') + ']</li>';
+        html = '<li class="calendar-item">• 目前沒有預約行程</li>';
       } else {
-        // 取最接近的 5 個行程
+        // 展示最近 5 個行程
         for (var e = 0; e < validEvents.length && e < 5; e++) {
           var ev = validEvents[e];
-          var evYYYYMMDD = parseInt(ev.startStr.substring(0, 8), 10);
-          var isToday = (evYYYYMMDD === currentYYYYMMDD);
+          var isToday = (ev.numDate === todayNum);
           var prefix = isToday ? '[今日] ' : '';
           
           var dateStr = prefix + ev.month + '/' + ev.day + ' ';
