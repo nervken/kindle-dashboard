@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Kindle Weather & Live Google Calendar</title>
+<title>Kindle Weather & Multi-Day Calendar</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -39,19 +39,18 @@
 
   .data-table td {
     border: 2px solid #000000;
-    padding: 10px 8px;
-    font-size: 22px;
+    padding: 8px 6px;
+    font-size: 20px;
     font-weight: 900;
   }
 
   .forecast-table td {
-    border-bottom: 3px solid #000000;
-    padding: 10px 4px;
-    font-size: 22px;
+    border-bottom: 2px solid #000000;
+    padding: 8px 4px;
+    font-size: 20px;
     font-weight: 900 !important;
   }
 
-  /* 行程清單樣式優化 */
   .calendar-list {
     list-style: none;
     padding: 0;
@@ -60,7 +59,7 @@
   .calendar-item {
     font-size: 21px;
     font-weight: 900;
-    padding: 6px 0;
+    padding: 5px 0;
     border-bottom: 2px dashed #000000;
     word-break: break-all;
   }
@@ -72,19 +71,19 @@
 <body>
 
   <!-- 1. 頂部頁眉：特大時間與地點 -->
-  <div style="border-bottom: 5px solid #000000; padding-bottom: 8px; margin-bottom: 8px;">
+  <div style="border-bottom: 5px solid #000000; padding-bottom: 6px; margin-bottom: 6px;">
     <table>
       <tr>
         <td style="vertical-align: bottom; width: 55%;">
           <div class="time-large" id="current-time">--:--</div>
-          <div id="current-date" style="font-size: 25px; font-weight: 900; margin-top: 8px;">----年--月--日</div>
+          <div id="current-date" style="font-size: 24px; font-weight: 900; margin-top: 6px;">----年--月--日</div>
         </td>
         <td style="text-align: right; vertical-align: bottom; width: 45%;">
-          <div style="border: 3px solid #000000; padding: 4px 8px; font-size: 22px; font-weight: 900; display: inline-block; margin-bottom: 6px;">
+          <div style="border: 3px solid #000000; padding: 4px 8px; font-size: 20px; font-weight: 900; display: inline-block; margin-bottom: 4px;">
             [地點] <span id="location-name">英國 Denton</span>
           </div>
           <div>
-            <span id="header-temp" style="font-size: 45px; font-weight: 900;">--°C</span>
+            <span id="header-temp" style="font-size: 42px; font-weight: 900;">--°C</span>
           </div>
         </td>
       </tr>
@@ -93,15 +92,15 @@
 
   <!-- 2. 今日天氣實況 -->
   <div class="kindle-box">
-    <div style="font-size: 24px; font-weight: 900; border-bottom: 3px solid #000000; padding-bottom: 5px; margin-bottom: 8px;">
+    <div style="font-size: 22px; font-weight: 900; border-bottom: 3px solid #000000; padding-bottom: 4px; margin-bottom: 6px;">
       今日天氣實況
     </div>
     
-    <table style="margin-bottom: 8px;">
+    <table style="margin-bottom: 6px;">
       <tr>
-        <td style="font-size: 65px; font-weight: 900; width: 35%;" id="main-temp">--°C</td>
-        <td style="text-align: right; font-size: 22px; font-weight: 900; width: 65%; line-height: 1.3;">
-          <div id="main-condition-text" style="font-size: 26px; font-weight: 900; margin-bottom: 4px;">載入中...</div>
+        <td style="font-size: 60px; font-weight: 900; width: 35%;" id="main-temp">--°C</td>
+        <td style="text-align: right; font-size: 20px; font-weight: 900; width: 65%; line-height: 1.3;">
+          <div id="main-condition-text" style="font-size: 24px; font-weight: 900; margin-bottom: 2px;">載入中...</div>
           <div>最高: <span id="temp-max">--</span> / 最低: <span id="temp-min">--</span></div>
           <div>體感溫度: <span id="apparent-temp">--</span></div>
         </td>
@@ -120,42 +119,42 @@
     </table>
   </div>
 
-  <!-- 3. Google 日曆近期 真實行程區塊 -->
+  <!-- 3. Google 日曆近期預約行程區塊 -->
   <div class="kindle-box">
-    <div style="font-size: 24px; font-weight: 900; border-bottom: 3px solid #000000; padding-bottom: 5px; margin-bottom: 8px;">
+    <div style="font-size: 22px; font-weight: 900; border-bottom: 3px solid #000000; padding-bottom: 4px; margin-bottom: 6px;">
       📅 Google 日曆近期預約行程
     </div>
     <ul class="calendar-list" id="calendar-events-list">
-      <li class="calendar-item" id="cal-status">正在同步連線 Google 伺服器...</li>
+      <li class="calendar-item" id="cal-status">正在讀取 Google 日曆行程...</li>
     </ul>
   </div>
 
   <!-- 4. 未來 7 天天氣預報 -->
   <div class="kindle-box" style="flex: 1;">
-    <div style="font-size: 24px; font-weight: 900; border-bottom: 3px solid #000000; padding-bottom: 5px; margin-bottom: 8px;">
+    <div style="font-size: 22px; font-weight: 900; border-bottom: 3px solid #000000; padding-bottom: 4px; margin-bottom: 6px;">
       未來 7 天天氣預報
     </div>
     <table class="forecast-table">
       <tbody id="forecast-body">
-        <tr><td style="text-align:center; padding: 15px 0; font-size: 22px; font-weight: 900;" id="status-msg">正在更新天氣數據...</td></tr>
+        <tr><td style="text-align:center; padding: 10px 0; font-size: 20px; font-weight: 900;" id="status-msg">正在更新天氣數據...</td></tr>
       </tbody>
     </table>
   </div>
 
   <!-- 5. 世界城市時間 -->
   <div class="kindle-box" style="margin-bottom: 0;">
-    <div style="font-size: 20px; font-weight: 900; border-bottom: 2px solid #000000; margin-bottom: 5px; padding-bottom: 2px;">
+    <div style="font-size: 18px; font-weight: 900; border-bottom: 2px solid #000000; margin-bottom: 4px; padding-bottom: 2px;">
       世界主要城市時間
     </div>
-    <table style="text-align: center; font-size: 20px; font-weight: 900;">
-      <tr style="font-size: 18px; color: #000;">
+    <table style="text-align: center; font-size: 18px; font-weight: 900;">
+      <tr style="font-size: 16px; color: #000;">
         <td style="width: 20%;">倫敦</td>
         <td style="width: 20%;">香港</td>
         <td style="width: 20%;">紐約</td>
         <td style="width: 20%;">東京</td>
         <td style="width: 20%;">雪梨</td>
       </tr>
-      <tr style="font-size: 24px; font-weight: 900; height: 35px; vertical-align: middle;">
+      <tr style="font-size: 22px; font-weight: 900; height: 30px; vertical-align: middle;">
         <td id="clock-london">--:--</td>
         <td id="clock-hk">--:--</td>
         <td id="clock-ny">--:--</td>
@@ -165,14 +164,14 @@
     </table>
   </div>
 
-  <div style="font-size: 13px; font-weight: 900; margin-top: 4px; text-align: right;">
+  <div style="font-size: 12px; font-weight: 900; margin-top: 4px; text-align: right;">
     最後更新時間: <span id="update-time">--:--</span>
   </div>
 
   <script>
     var lat = 53.456, lon = -2.115; // Denton, UK
 
-    // ⚠️ 正式使用你提供的 Google Apps Script 官方中轉站網址
+    // 你測試成功的 Google Apps Script 網址
     var gasUrl = 'https://script.google.com/macros/s/AKfycbznwqGGC7sr-a6XSgsUdXye6V-qyBxcTbBMLESGS7YlTCwD1Kpmma-Y6wtWFbpQL9R_bg/exec';
 
     function padZero(num) { return num < 10 ? '0' + num : '' + num; }
@@ -212,7 +211,6 @@
       document.getElementById('clock-sydney').innerText = calcTZTime(10);
     }
 
-    // 直接向 Google 官方 Apps Script 發送請求，100% 成功連線
     function fetchAllCalendars() {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', gasUrl, true);
@@ -222,19 +220,15 @@
             var evs = parseICSData(xhr.responseText);
             renderCalendarEvents(evs);
           } else {
-            // GAS 部署設定錯誤 (忘記選「所有人」) 或 Google 伺服器問題
-            document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 讀取日曆數據失敗 (請檢查 GAS 部署設定)</li>';
+            document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 讀取日曆數據失敗</li>';
           }
         }
       };
       xhr.send();
     }
 
-    // 優化 ICS 解析邏輯，彻底解決換行與標題解析問題
     function parseICSData(icsData) {
       if (!icsData) return [];
-      
-      // 解開 iCal 格式的跨行摺疊 (Unfold lines)
       var unfoldedData = icsData.replace(/\r\n\s/g, '').replace(/\n\s/g, '');
       var lines = unfoldedData.split(/\r\n|\n|\r/);
       
@@ -246,7 +240,7 @@
         if (line.indexOf('BEGIN:VEVENT') === 0) {
           currentEvent = {};
         } else if (line.indexOf('END:VEVENT') === 0) {
-          if (currentEvent && currentEvent.summary) {
+          if (currentEvent && currentEvent.summary && currentEvent.start) {
             events.push(currentEvent);
           }
           currentEvent = null;
@@ -258,16 +252,19 @@
             currentEvent.summary = sParts.slice(1).join(':');
           } else if (line.indexOf('DTSTART') === 0) {
             var parts = line.split(':');
-            currentEvent.start = parts[parts.length - 1];
+            // 清理日期字串，只留數字部分 (例如 20260813)
+            var rawDate = parts[parts.length - 1].replace(/[^0-9T]/g, '');
+            currentEvent.start = rawDate;
           }
         }
       }
       return events;
     }
 
-    // 修復日曆過濾與顯示邏輯：強制顯示未來 7 天內的所有全天行程！
+    // 全新多行程過濾與精確排序邏輯
     function renderCalendarEvents(events) {
       var londonDate = getTZDate(1);
+      // 取得今天的 YYYYMMDD 數字 (例如 20260811)
       var todayYYYYMMDD = parseInt(londonDate.getFullYear() + padZero(londonDate.getMonth() + 1) + padZero(londonDate.getDate()), 10);
 
       var validEvents = [];
@@ -275,32 +272,34 @@
         var ev = events[i];
         if (ev.start && ev.start.length >= 8) {
           var evDateNum = parseInt(ev.start.substring(0, 8), 10);
-          // 保留今天或未來所有的行程
-          if (evDateNum >= todayYYYYMMDD - 1) { // 放寬 1 天寬限期
+          // 只要日期大於或等於今天，全部保留！
+          if (evDateNum >= todayYYYYMMDD) {
             validEvents.push(ev);
           }
-        } else {
-          validEvents.push(ev);
         }
       }
 
-      // 按時間序排序
+      // 嚴謹按日期和時間升序排列 (由近至遠：12號 -> 13號 -> 14號 -> 15號)
       validEvents.sort(function(a, b) {
-        return (a.start || '').localeCompare(b.start || '');
+        return a.start.localeCompare(b.start);
       });
 
       var html = '';
       if (validEvents.length === 0) {
         html = '<li class="calendar-item">• 目前沒有預約行程</li>';
       } else {
-        // 最多顯示 6 個最接近的行程 (確保 12號, 13號, 14號等會依次列出)
-        for (var e = 0; e < validEvents.length && e < 6; e++) {
+        // 放寬限制：最多列出 8 個近期的預約行程
+        for (var e = 0; e < validEvents.length && e < 8; e++) {
           var ev = validEvents[e];
           var dateStr = '';
           if (ev.start && ev.start.length >= 8) {
+            var evDateNum = parseInt(ev.start.substring(0, 8), 10);
             var m = parseInt(ev.start.substring(4, 6), 10);
             var d = parseInt(ev.start.substring(6, 8), 10);
-            dateStr = m + '/' + d + ' ';
+            
+            var prefix = (evDateNum === todayYYYYMMDD) ? '[今日] ' : '';
+            dateStr = prefix + m + '/' + d + ' ';
+            
             if (ev.start.indexOf('T') !== -1 && ev.start.length >= 13) {
               dateStr += ev.start.substring(9, 11) + ':' + ev.start.substring(11, 13) + ' ';
             } else {
@@ -322,7 +321,7 @@
       if (code >= 51 && code <= 55) return '[雨] 輕微毛毛雨';
       if (code >= 61 && code <= 63) return '[雨] 局部有陣雨';
       if (code === 65) return '[雨] 中至大陣雨';
-      if (code >= 71 && code <= 77) return '[雪] 飘雪或積雪';
+      if (code >= 71 && code <= 77) return '[雪] 飄雪或積雪';
       if (code >= 80 && code <= 82) return '[雨] 短暫局部雨';
       if (code >= 95) return '[雷] 雷暴及陣雨';
       return '[陰] 多雲有陰';
@@ -338,9 +337,7 @@
           try {
             var data = JSON.parse(xhr.responseText);
             renderWeather(data);
-          } catch(e) {
-            document.getElementById('status-msg').innerText = '解析天氣數據失敗';
-          }
+          } catch(e) {}
         }
       };
       xhr.send();
@@ -394,11 +391,11 @@
 
     window.onload = function() {
       updateClock();
-      setInterval(updateClock, 1000); // 時鐘每秒更新
+      setInterval(updateClock, 1000);
       fetchWeather();
-      setInterval(fetchWeather, 15 * 60 * 1000); // 天氣每 15 分鐘刷新
+      setInterval(fetchWeather, 15 * 60 * 1000);
       fetchAllCalendars();
-      setInterval(fetchAllCalendars, 15 * 60 * 1000); // 日曆每 15 分鐘刷新
+      setInterval(fetchAllCalendars, 15 * 60 * 1000);
     };
   </script>
 </body>
