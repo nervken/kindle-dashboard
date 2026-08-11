@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Kindle Weather & Multi-Day Calendar</title>
+<title>Kindle Weather & All-Day Calendar Fix</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -171,7 +171,7 @@
   <script>
     var lat = 53.456, lon = -2.115; // Denton, UK
 
-    // 你測試成功的 Google Apps Script 網址
+    // 你的 Google Apps Script 網址
     var gasUrl = 'https://script.google.com/macros/s/AKfycbznwqGGC7sr-a6XSgsUdXye6V-qyBxcTbBMLESGS7YlTCwD1Kpmma-Y6wtWFbpQL9R_bg/exec';
 
     function padZero(num) { return num < 10 ? '0' + num : '' + num; }
@@ -252,36 +252,49 @@
             currentEvent.summary = sParts.slice(1).join(':');
           } else if (line.indexOf('DTSTART') === 0) {
             var parts = line.split(':');
-            // 清理日期字串，只留數字部分 (例如 20260813)
-            var rawDate = parts[parts.length - 1].replace(/[^0-9T]/g, '');
-            currentEvent.start = rawDate;
+            var rawStr = parts[parts.length - 1].trim();
+            // 提取前 8 位數字 (例如 20260812)
+            var cleanDigits = rawStr.replace(/[^0-9]/g, '');
+            if (cleanDigits.length >= 8) {
+              currentEvent.startStr = cleanDigits; // 原始乾淨數字字串
+              currentEvent.year = parseInt(cleanDigits.substring(0, 4), 10);
+              currentEvent.month = parseInt(cleanDigits.substring(4, 6), 10);
+              currentEvent.day = parseInt(cleanDigits.substring(6, 8), 10);
+              currentEvent.isTime = (rawStr.indexOf('T') !== -1 && cleanDigits.length >= 12);
+              if (currentEvent.isTime) {
+                currentEvent.timeStr = cleanDigits.substring(8, 10) + ':' + cleanDigits.substring(10, 12);
+              }
+              currentEvent.start = cleanDigits;
+            }
           }
         }
       }
       return events;
     }
 
-    // 全新多行程過濾與精確排序邏輯
+    // 終極修復：精確以當天 00:00:00 基準比對，絕對不遺漏全天行程！
     function renderCalendarEvents(events) {
       var londonDate = getTZDate(1);
-      // 取得今天的 YYYYMMDD 數字 (例如 20260811)
-      var todayYYYYMMDD = parseInt(londonDate.getFullYear() + padZero(londonDate.getMonth() + 1) + padZero(londonDate.getDate()), 10);
+      // 建立今日午夜 00:00:00 的 Date 物件
+      var todayMidnight = new Date(londonDate.getFullYear(), londonDate.getMonth(), londonDate.getDate(), 0, 0, 0);
 
       var validEvents = [];
       for (var i = 0; i < events.length; i++) {
         var ev = events[i];
-        if (ev.start && ev.start.length >= 8) {
-          var evDateNum = parseInt(ev.start.substring(0, 8), 10);
-          // 只要日期大於或等於今天，全部保留！
-          if (evDateNum >= todayYYYYMMDD) {
+        if (ev.year && ev.month && ev.day) {
+          // 建立行程的 Date 物件 (月份由 0 開始)
+          var evDate = new Date(ev.year, ev.month - 1, ev.day, 0, 0, 0);
+          
+          // 只要行程日期大於或等於今日午夜，強制留低！
+          if (evDate >= todayMidnight) {
             validEvents.push(ev);
           }
         }
       }
 
-      // 嚴謹按日期和時間升序排列 (由近至遠：12號 -> 13號 -> 14號 -> 15號)
+      // 按日期時間升序排列
       validEvents.sort(function(a, b) {
-        return a.start.localeCompare(b.start);
+        return a.startStr.localeCompare(b.startStr);
       });
 
       var html = '';
@@ -291,21 +304,16 @@
         // 放寬限制：最多列出 8 個近期的預約行程
         for (var e = 0; e < validEvents.length && e < 8; e++) {
           var ev = validEvents[e];
-          var dateStr = '';
-          if (ev.start && ev.start.length >= 8) {
-            var evDateNum = parseInt(ev.start.substring(0, 8), 10);
-            var m = parseInt(ev.start.substring(4, 6), 10);
-            var d = parseInt(ev.start.substring(6, 8), 10);
-            
-            var prefix = (evDateNum === todayYYYYMMDD) ? '[今日] ' : '';
-            dateStr = prefix + m + '/' + d + ' ';
-            
-            if (ev.start.indexOf('T') !== -1 && ev.start.length >= 13) {
-              dateStr += ev.start.substring(9, 11) + ':' + ev.start.substring(11, 13) + ' ';
-            } else {
-              dateStr += '(全天) ';
-            }
+          var isToday = (ev.year === londonDate.getFullYear() && ev.month === (londonDate.getMonth() + 1) && ev.day === londonDate.getDate());
+          var prefix = isToday ? '[今日] ' : '';
+          
+          var dateStr = prefix + ev.month + '/' + ev.day + ' ';
+          if (ev.isTime && ev.timeStr) {
+            dateStr += ev.timeStr + ' ';
+          } else {
+            dateStr += '(全天) ';
           }
+          
           html += '<li class="calendar-item">• ' + dateStr + ev.summary + '</li>';
         }
       }
