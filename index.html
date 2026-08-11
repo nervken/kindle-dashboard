@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Kindle Weather & Live Events Only</title>
+<title>Kindle Weather & Live GAS Calendar</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -119,13 +119,13 @@
     </table>
   </div>
 
-  <!-- 3. Google 日曆近期預約行程區塊 (踢除舊年份，只留目前與未來) -->
+  <!-- 3. Google 日曆行程區塊 -->
   <div class="kindle-box">
     <div style="font-size: 22px; font-weight: 900; border-bottom: 3px solid #000000; padding-bottom: 4px; margin-bottom: 6px;">
-      📅 Google 日曆近期預約行程 (最新 5 條)
+      📅 Google 日曆近期預約行程 (未來 5 天內)
     </div>
     <ul class="calendar-list" id="calendar-events-list">
-      <li class="calendar-item" id="cal-status">正在讀取 Google 日曆行程...</li>
+      <li class="calendar-item" id="cal-status">正在同步讀取 Google 日曆行程...</li>
     </ul>
   </div>
 
@@ -170,6 +170,8 @@
 
   <script>
     var lat = 53.456, lon = -2.115; // Denton, UK
+    
+    // 你的 GAS 專屬網址
     var gasUrl = 'https://script.google.com/macros/s/AKfycbznwqGGC7sr-a6XSgsUdXye6V-qyBxcTbBMLESGS7YlTCwD1Kpmma-Y6wtWFbpQL9R_bg/exec';
 
     function padZero(num) { return num < 10 ? '0' + num : '' + num; }
@@ -209,14 +211,20 @@
       document.getElementById('clock-sydney').innerText = calcTZTime(10);
     }
 
+    // 讀取 GAS 回傳的原生 JSON 資料
     function fetchAllCalendars() {
+      var fetchUrl = gasUrl + (gasUrl.indexOf('?') !== -1 ? '&' : '?') + '_t=' + new Date().getTime();
       var xhr = new XMLHttpRequest();
-      xhr.open('GET', gasUrl, true);
+      xhr.open('GET', fetchUrl, true);
       xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
           if (xhr.status === 200) {
-            var evs = parseICSData(xhr.responseText);
-            renderCalendarEvents(evs);
+            try {
+              var events = JSON.parse(xhr.responseText);
+              renderCalendarEvents(events);
+            } catch(e) {
+              document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 解析 JSON 失敗</li>';
+            }
           } else {
             document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 讀取日曆數據失敗</li>';
           }
@@ -225,96 +233,29 @@
       xhr.send();
     }
 
-    function parseICSData(icsData) {
-      if (!icsData) return [];
-      var unfoldedData = icsData.replace(/\r\n\s/g, '').replace(/\n\s/g, '');
-      var lines = unfoldedData.split(/\r\n|\n|\r/);
-      
-      var events = [];
-      var currentEvent = null;
-
-      for (var i = 0; i < lines.length; i++) {
-        var line = lines[i];
-        if (line.indexOf('BEGIN:VEVENT') === 0) {
-          currentEvent = {};
-        } else if (line.indexOf('END:VEVENT') === 0) {
-          if (currentEvent && currentEvent.summary) {
-            events.push(currentEvent);
-          }
-          currentEvent = null;
-        } else if (currentEvent) {
-          if (line.indexOf('SUMMARY') === 0) {
-            var colonIdx = line.indexOf(':');
-            if (colonIdx !== -1) {
-              currentEvent.summary = line.substring(colonIdx + 1);
-            }
-          } else if (line.indexOf('DTSTART') === 0) {
-            var colonIdx2 = line.indexOf(':');
-            if (colonIdx2 !== -1) {
-              var val = line.substring(colonIdx2 + 1).trim();
-              var cleanDigits = val.replace(/[^0-9]/g, '');
-              if (cleanDigits.length >= 8) {
-                currentEvent.startStr = cleanDigits;
-                currentEvent.numDate = parseInt(cleanDigits.substring(0, 8), 10);
-                currentEvent.month = parseInt(cleanDigits.substring(4, 6), 10);
-                currentEvent.day = parseInt(cleanDigits.substring(6, 8), 10);
-                currentEvent.isTime = (val.indexOf('T') !== -1 && cleanDigits.length >= 12);
-                if (currentEvent.isTime) {
-                  currentEvent.timeStr = cleanDigits.substring(8, 10) + ':' + cleanDigits.substring(10, 12);
-                }
-              }
-            }
-          }
-        }
-      }
-      return events;
-    }
-
-    // 關鍵修復：剔除「今天 2026/08/11 以前」的舊年份行程！
     function renderCalendarEvents(events) {
       if (!events || events.length === 0) {
-        document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 目前沒有預約行程</li>';
+        document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 未來 5 天內沒有預約行程</li>';
         return;
       }
 
       var londonDate = getTZDate(1);
-      // 計算英國當地的今天數字，例如 20260811
-      var todayNum = parseInt(londonDate.getFullYear() + padZero(londonDate.getMonth() + 1) + padZero(londonDate.getDate()), 10);
-
-      // 1. 剔除舊年份/過期行程（只保留數字大於或等於當前今天的行程）
-      var validEvents = [];
-      for (var i = 0; i < events.length; i++) {
-        var ev = events[i];
-        if (ev.numDate && ev.numDate >= todayNum) {
-          validEvents.push(ev);
-        }
-      }
-
-      // 2. 按日期升序排序 (由近至遠：8/11 -> 8/12 -> 8/13...)
-      validEvents.sort(function(a, b) {
-        return a.startStr.localeCompare(b.startStr);
-      });
-
-      // 3. 取最接近當前時間的前 5 條最新預約
-      var displayEvents = validEvents.slice(0, 5);
+      var todayDay = londonDate.getDate();
 
       var html = '';
-      if (displayEvents.length === 0) {
-        html = '<li class="calendar-item">• 目前沒有預約行程</li>';
-      } else {
-        for (var e = 0; e < displayEvents.length; e++) {
-          var ev = displayEvents[e];
-          var isToday = (ev.numDate === todayNum);
-          var prefix = isToday ? '[今日] ' : '';
+      for (var i = 0; i < events.length && i < 5; i++) {
+        var ev = events[i];
+        var isToday = (ev.day === todayDay);
+        var prefix = isToday ? '[今日] ' : '';
 
-          var dateStr = prefix + ev.month + '/' + ev.day + ' ';
-          if (ev.isTime && ev.timeStr) {
-            dateStr += ev.timeStr + ' ';
-          } else {
-            dateStr += '(全天) ';
-          }
-          html += '<li class="calendar-item">• ' + dateStr + (ev.summary || '未命名行程') + '</li>';
+        var dateStr = prefix + ev.month + '/' + ev.day + ' ';
+        if (ev.isTime && ev.timeStr) {
+          dateStr += ev.timeStr + ' ';
+        } else {
+          dateStr += '(全天) ';
         }
+
+        html += '<li class="calendar-item">• ' + dateStr + (ev.summary || '未命名行程') + '</li>';
       }
 
       document.getElementById('calendar-events-list').innerHTML = html;
