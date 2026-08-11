@@ -211,27 +211,42 @@
       document.getElementById('clock-sydney').innerText = calcTZTime(10);
     }
 
-    // 讀取 GAS 回傳的原生 JSON 資料
     function fetchAllCalendars() {
       var fetchUrl = gasUrl + (gasUrl.indexOf('?') !== -1 ? '&' : '?') + '_t=' + new Date().getTime();
       var xhr = new XMLHttpRequest();
       xhr.open('GET', fetchUrl, true);
+      
       xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
-          if (xhr.status === 200) {
+          // Kindle 瀏覽器處理 302 重導向時，status 有時會變成 0 或 302 但實際上已拿到資料
+          if (xhr.status === 200 || (xhr.status === 0 && xhr.responseText)) {
             try {
               var response = JSON.parse(xhr.responseText);
-              // 修正重點：判斷回傳結構是物件 (response.events) 還是純陣列 (response)
               var eventsList = response.events ? response.events : response;
               renderCalendarEvents(eventsList);
             } catch(e) {
               document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 解析 JSON 失敗</li>';
             }
           } else {
-            document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 讀取日曆數據失敗</li>';
+            document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 讀取日曆數據失敗 (HTTP ' + xhr.status + ')</li>';
           }
         }
       };
+    
+      // 增加錯誤捕捉處理
+      xhr.onerror = function() {
+        // 嘗試從 responseText 強制解析
+        if (xhr.responseText) {
+          try {
+            var response = JSON.parse(xhr.responseText);
+            var eventsList = response.events ? response.events : response;
+            renderCalendarEvents(eventsList);
+            return;
+          } catch(e) {}
+        }
+        document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 網路連線或 CORS 限制失敗</li>';
+      };
+    
       xhr.send();
     }
 
