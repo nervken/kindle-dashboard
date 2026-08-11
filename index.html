@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Kindle Weather & Top 5 Events</title>
+<title>Kindle Weather & Live Events Only</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -119,7 +119,7 @@
     </table>
   </div>
 
-  <!-- 3. Google 日曆近期預約行程區塊 (只取前 5 條最新) -->
+  <!-- 3. Google 日曆近期預約行程區塊 (踢除舊年份，只留目前與未來) -->
   <div class="kindle-box">
     <div style="font-size: 22px; font-weight: 900; border-bottom: 3px solid #000000; padding-bottom: 4px; margin-bottom: 6px;">
       📅 Google 日曆近期預約行程 (最新 5 條)
@@ -255,6 +255,7 @@
               var cleanDigits = val.replace(/[^0-9]/g, '');
               if (cleanDigits.length >= 8) {
                 currentEvent.startStr = cleanDigits;
+                currentEvent.numDate = parseInt(cleanDigits.substring(0, 8), 10);
                 currentEvent.month = parseInt(cleanDigits.substring(4, 6), 10);
                 currentEvent.day = parseInt(cleanDigits.substring(6, 8), 10);
                 currentEvent.isTime = (val.indexOf('T') !== -1 && cleanDigits.length >= 12);
@@ -269,37 +270,51 @@
       return events;
     }
 
-    // ⭐ 終極零出錯邏輯：直接排序後切片只留 5 條，完全不做複雜日期攔截！
+    // 關鍵修復：剔除「今天 2026/08/11 以前」的舊年份行程！
     function renderCalendarEvents(events) {
       if (!events || events.length === 0) {
         document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 目前沒有預約行程</li>';
         return;
       }
 
-      // 1. 按日期順序排序 (由舊到新)
-      events.sort(function(a, b) {
-        if (a.startStr && b.startStr) {
-          return a.startStr.localeCompare(b.startStr);
+      var londonDate = getTZDate(1);
+      // 計算英國當地的今天數字，例如 20260811
+      var todayNum = parseInt(londonDate.getFullYear() + padZero(londonDate.getMonth() + 1) + padZero(londonDate.getDate()), 10);
+
+      // 1. 剔除舊年份/過期行程（只保留數字大於或等於當前今天的行程）
+      var validEvents = [];
+      for (var i = 0; i < events.length; i++) {
+        var ev = events[i];
+        if (ev.numDate && ev.numDate >= todayNum) {
+          validEvents.push(ev);
         }
-        return 0;
+      }
+
+      // 2. 按日期升序排序 (由近至遠：8/11 -> 8/12 -> 8/13...)
+      validEvents.sort(function(a, b) {
+        return a.startStr.localeCompare(b.startStr);
       });
 
-      // 2. 嚴格只取前 5 條 (不多也不少，確保畫面極度乾淨，絕不擠壓版面)
-      var displayEvents = events.slice(0, 5);
+      // 3. 取最接近當前時間的前 5 條最新預約
+      var displayEvents = validEvents.slice(0, 5);
 
       var html = '';
-      for (var e = 0; e < displayEvents.length; e++) {
-        var ev = displayEvents[e];
-        var dateStr = '';
-        if (ev.month && ev.day) {
-          dateStr = ev.month + '/' + ev.day + ' ';
+      if (displayEvents.length === 0) {
+        html = '<li class="calendar-item">• 目前沒有預約行程</li>';
+      } else {
+        for (var e = 0; e < displayEvents.length; e++) {
+          var ev = displayEvents[e];
+          var isToday = (ev.numDate === todayNum);
+          var prefix = isToday ? '[今日] ' : '';
+
+          var dateStr = prefix + ev.month + '/' + ev.day + ' ';
           if (ev.isTime && ev.timeStr) {
             dateStr += ev.timeStr + ' ';
           } else {
             dateStr += '(全天) ';
           }
+          html += '<li class="calendar-item">• ' + dateStr + (ev.summary || '未命名行程') + '</li>';
         }
-        html += '<li class="calendar-item">• ' + dateStr + (ev.summary || '未命名行程') + '</li>';
       }
 
       document.getElementById('calendar-events-list').innerHTML = html;
