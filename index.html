@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Kindle Weather & Pure 5-Day Calendar</title>
+<title>Kindle Weather & Next 5 Events</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -119,10 +119,10 @@
     </table>
   </div>
 
-  <!-- 3. Google 日曆近期預約行程區塊 (純未來 5 天) -->
+  <!-- 3. Google 日曆近期預約行程區塊 (最接近的 5 個預約) -->
   <div class="kindle-box">
     <div style="font-size: 22px; font-weight: 900; border-bottom: 3px solid #000000; padding-bottom: 4px; margin-bottom: 6px;">
-      📅 Google 日曆近期預約行程 (未來 5 天內)
+      📅 Google 日曆近期預約行程 (最新預約)
     </div>
     <ul class="calendar-list" id="calendar-events-list">
       <li class="calendar-item" id="cal-status">正在讀取 Google 日曆行程...</li>
@@ -256,7 +256,6 @@
               if (cleanDigits.length >= 8) {
                 currentEvent.startStr = cleanDigits;
                 currentEvent.numDate = parseInt(cleanDigits.substring(0, 8), 10);
-                currentEvent.year = parseInt(cleanDigits.substring(0, 4), 10);
                 currentEvent.month = parseInt(cleanDigits.substring(4, 6), 10);
                 currentEvent.day = parseInt(cleanDigits.substring(6, 8), 10);
                 currentEvent.isTime = (val.indexOf('T') !== -1 && cleanDigits.length >= 12);
@@ -271,7 +270,7 @@
       return events;
     }
 
-    // 精準過濾：以英國當地時間計算，【嚴格只留未來 5 天 (8/11 ~ 8/16)】
+    // 新邏輯：只移除「很久以前的舊行程」，保留所有未來行程，並取最接近的 5 個！
     function renderCalendarEvents(events) {
       if (!events || events.length === 0) {
         document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 目前沒有預約行程</li>';
@@ -279,37 +278,33 @@
       }
 
       var londonDate = getTZDate(1);
-      
-      // 計算英國當地的「今日」數字 (例如 20260811)
+      // 計算英國當地的「今天」數字
       var todayNum = parseInt(londonDate.getFullYear() + padZero(londonDate.getMonth() + 1) + padZero(londonDate.getDate()), 10);
 
-      // 計算「未來第 5 天」的 Date 物件，轉成數字 (例如 20260816)
-      var futureDate = new Date(londonDate.getFullYear(), londonDate.getMonth(), londonDate.getDate() + 5);
-      var maxFutureNum = parseInt(futureDate.getFullYear() + padZero(futureDate.getMonth() + 1) + padZero(futureDate.getDate()), 10);
+      // 1. 先按日期排序 (由舊到新)
+      events.sort(function(a, b) {
+        if (a.startStr && b.startStr) {
+          return a.startStr.localeCompare(b.startStr);
+        }
+        return 0;
+      });
 
-      var validEvents = [];
+      // 2. 隻過濾掉「今天以前」的舊行程 (保留今天及未來的所有行程)
+      var futureEvents = [];
       for (var i = 0; i < events.length; i++) {
         var ev = events[i];
-        if (ev.numDate) {
-          // 雙重保險：行程日期必須大於等於今天，並且不大於未來 5 天
-          if (ev.numDate >= todayNum && ev.numDate <= maxFutureNum) {
-            validEvents.push(ev);
-          }
+        if (ev.numDate && ev.numDate >= todayNum - 1) { // 寬限 1 天
+          futureEvents.push(ev);
         }
       }
 
-      // 按日期升序排序 (由近至遠：8/11 -> 8/12 -> 8/13...)
-      validEvents.sort(function(a, b) {
-        return a.startStr.localeCompare(b.startStr);
-      });
-
       var html = '';
-      if (validEvents.length === 0) {
-        html = '<li class="calendar-item">• 未來 5 天內沒有預約行程</li>';
+      if (futureEvents.length === 0) {
+        html = '<li class="calendar-item">• 目前沒有預約行程</li>';
       } else {
-        // 展示未來 5 天內的所有預約行程 (最多顯示 6 條)
-        for (var e = 0; e < validEvents.length && e < 6; e++) {
-          var ev = validEvents[e];
+        // 3. 不設天數上限，直接取最接近今天的 5 個行程！
+        for (var e = 0; e < futureEvents.length && e < 5; e++) {
+          var ev = futureEvents[e];
           var isToday = (ev.numDate === todayNum);
           var prefix = isToday ? '[今日] ' : '';
           
