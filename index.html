@@ -23,8 +23,8 @@
 
   .kindle-box {
     border: 4px solid #000000;
-    padding: 8px;
-    margin-bottom: 8px;
+    padding: 6px;
+    margin-bottom: 6px;
     width: 100%;
   }
 
@@ -39,15 +39,15 @@
 
   .data-table td {
     border: 2px solid #000000;
-    padding: 8px 6px;
-    font-size: 20px;
+    padding: 6px 4px;
+    font-size: 19px;
     font-weight: 900;
   }
 
   .forecast-table td {
     border-bottom: 2px solid #000000;
-    padding: 8px 4px;
-    font-size: 20px;
+    padding: 6px 4px;
+    font-size: 19px;
     font-weight: 900 !important;
   }
 
@@ -57,9 +57,9 @@
     margin: 0;
   }
   .calendar-item {
-    font-size: 21px;
+    font-size: 19px;
     font-weight: 900;
-    padding: 6px 0;
+    padding: 3px 0;
     border-bottom: 2px dashed #000000;
     word-break: break-all;
   }
@@ -119,18 +119,18 @@
     </table>
   </div>
 
-  <!-- 3. Google 日曆行程區塊 -->
-  <div class="kindle-box">
+  <!-- 3. Google 日曆行程與 Task 區塊 (加強彈性延伸空間) -->
+  <div class="kindle-box" style="flex: 1; min-height: 120px;">
     <div style="font-size: 22px; font-weight: 900; border-bottom: 3px solid #000000; padding-bottom: 4px; margin-bottom: 6px;">
-      📅 Google 日曆近期預約行程 (未來 5 天內)
+      📅 Google 日曆與 Task 預約行程 (未來 5 天內)
     </div>
     <ul class="calendar-list" id="calendar-events-list">
-      <li class="calendar-item" id="cal-status">正在同步讀取 Google 日曆行程...</li>
+      <li class="calendar-item" id="cal-status">正在同步讀取行程與 Tasks...</li>
     </ul>
   </div>
 
   <!-- 4. 未來 7 天天氣預報 -->
-  <div class="kindle-box" style="flex: 1;">
+  <div class="kindle-box">
     <div style="font-size: 22px; font-weight: 900; border-bottom: 3px solid #000000; padding-bottom: 4px; margin-bottom: 6px;">
       未來 7 天天氣預報
     </div>
@@ -211,79 +211,58 @@
       document.getElementById('clock-sydney').innerText = calcTZTime(10);
     }
 
+    // 全域 JSONP 回調 Function (解決 Kindle CORS 跨域限制)
     window.onCalendarDataLoaded = function(data) {
       var eventsList = data.events ? data.events : data;
       renderCalendarEvents(eventsList);
     };
-    
+
+    // 使用 JSONP (<script> 標籤) 抓取 GAS 資料，100% 繞過 Kindle 舊瀏覽器的 CORS 限制
     function fetchAllCalendars() {
-      // 移除舊的 script 標籤 (若存在)
       var oldScript = document.getElementById('gas-jsonp-script');
       if (oldScript) {
         oldScript.parentNode.removeChild(oldScript);
       }
-    
-      // 建立新的 script 標籤發送 JSONP 請求
+
       var script = document.createElement('script');
       script.id = 'gas-jsonp-script';
-      
       var fetchUrl = gasUrl + (gasUrl.indexOf('?') !== -1 ? '&' : '?') + 
                      'callback=onCalendarDataLoaded&_t=' + new Date().getTime();
       
       script.src = fetchUrl;
       script.onerror = function() {
-        document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 載入日曆失敗 (Script Error)</li>';
+        document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 載入日曆失敗 (JSONP 請求被阻擋)</li>';
       };
-    
+
       document.body.appendChild(script);
-    }
-    
-      // 增加錯誤捕捉處理
-      xhr.onerror = function() {
-        // 嘗試從 responseText 強制解析
-        if (xhr.responseText) {
-          try {
-            var response = JSON.parse(xhr.responseText);
-            var eventsList = response.events ? response.events : response;
-            renderCalendarEvents(eventsList);
-            return;
-          } catch(e) {}
-        }
-        document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 網路連線或 CORS 限制失敗</li>';
-      };
-    
-      xhr.send();
     }
 
     function renderCalendarEvents(events) {
       if (!events || events.length === 0) {
-        document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 未來 5 天內沒有預約行程</li>';
+        document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 未來 5 天內沒有預約行程與 Task</li>';
         return;
       }
-    
+
       var londonDate = getTZDate(1);
       var todayDay = londonDate.getDate();
-    
+
       var html = '';
-      // 顯示最多 8 筆，防止內容溢出電子紙框線
+      // 顯示最多 8 筆，充份利用版面空間
       for (var i = 0; i < events.length && i < 8; i++) {
         var ev = events[i];
         var isToday = (ev.day === todayDay);
         var prefix = isToday ? '[今日] ' : '';
-    
+
         var dateStr = prefix + ev.month + '/' + ev.day + ' ';
         if (ev.isTime && ev.timeStr) {
           dateStr += ev.timeStr + ' ';
         } else {
           dateStr += '(全天) ';
         }
-    
-        // 區分 Task 與 Event 的顯示標示
-        var typeTag = (ev.type === 'task') ? '📌 ' : '🗓️ ';
-    
-        html += '<li class="calendar-item">• ' + typeTag + dateStr + (ev.summary || '未命名行程') + '</li>';
+
+        html += '<li class="calendar-item">• ' + dateStr + (ev.summary || '未命名行程') + '</li>';
       }
-    
+
       document.getElementById('calendar-events-list').innerHTML = html;
     }
 
