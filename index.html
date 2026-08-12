@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Kindle Weather & Live GAS Calendar</title>
+<title>Universal E-Reader Weather & GAS Calendar</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -15,7 +15,7 @@
     -webkit-text-size-adjust: none;
   }
   body {
-    padding: 10px; /* 從 6px 加大到 10px */
+    padding: 10px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -23,9 +23,10 @@
 
   .kindle-box {
     border: 4px solid #000000;
-    padding: 10px;        /* 從 6px 調大到 10px，增加內部空間 */
-    margin-bottom: 12px;  /* 從 6px 調大到 12px，拉開各區塊距離 */
+    padding: 10px;
+    margin-bottom: 12px;
     width: 100%;
+    background: #ffffff;
   }
 
   .time-large {
@@ -39,14 +40,14 @@
 
   .data-table td {
     border: 2px solid #000000;
-    padding: 8px 6px;     /* 調大內邊距 */
+    padding: 8px 6px;
     font-size: 20px;
     font-weight: 900;
   }
 
   .forecast-table td {
     border-bottom: 2px solid #000000;
-    padding: 10px 4px;    /* 從 6px 加大到 10px，讓 7 天天氣表格變高 */
+    padding: 10px 4px;
     font-size: 20px;
     font-weight: 900 !important;
   }
@@ -56,22 +57,62 @@
     padding: 0;
     margin: 0;
   }
+  
   .calendar-item {
     font-size: 20px;
     font-weight: 900;
-    padding: 8px 0;       /* 從 3px 加大到 8px，撐高日曆行程間距 */
+    padding: 8px 4px;
     border-bottom: 2px dashed #000000;
     word-break: break-all;
+    display: flex;
+    align-items: center;
   }
   .calendar-item:last-child {
     border-bottom: none;
+  }
+
+  /* --- 針對彩色螢幕與黑白 Kindle 的雙模樣式設計 --- */
+  
+  /* 預設彩色螢幕樣式 (新版彩屏閱讀器 / 手機 / 電腦) */
+  .tag {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 16px;
+    margin-right: 6px;
+    font-weight: bold;
+  }
+  .tag-event {
+    background-color: #e3f2fd;
+    color: #0d47a1;
+    border: 1px solid #90caf9;
+  }
+  .tag-task {
+    background-color: #e8f5e9;
+    color: #1b5e20;
+    border: 1px solid #a5d6a7;
+  }
+  .weather-icon {
+    display: inline-block;
+    margin-right: 4px;
+  }
+
+  /* 舊版單色 E-ink (Kindle) 自動降級：強制高對比黑白，防止色彩轉換成淡灰色筆劃不清 */
+  @media monochrome, (max-monochrome: 8) {
+    .kindle-box { border-color: #000000 !important; }
+    .tag {
+      background-color: transparent !important;
+      color: #000000 !important;
+      border: 1.5px solid #000000 !important;
+      border-radius: 0 !important;
+    }
   }
 </style>
 </head>
 <body>
 
-  <!-- 1. 頂部頁眉：特大時間與地點 -->
-  <div style="border-bottom: 5px solid #000000; padding-bottom: 6px; margin-bottom: 6px;">
+  <!-- 1. 頂部頁眉 -->
+  <div style="border-bottom: 5px solid #000000; padding-bottom: 6px; margin-bottom: 8px;">
     <table>
       <tr>
         <td style="vertical-align: bottom; width: 55%;">
@@ -93,7 +134,7 @@
   <!-- 2. 今日天氣實況 -->
   <div class="kindle-box">
     <div style="font-size: 22px; font-weight: 900; border-bottom: 3px solid #000000; padding-bottom: 4px; margin-bottom: 6px;">
-      今日天氣實況
+      ☀️ 今日天氣實況
     </div>
     
     <table style="margin-bottom: 6px;">
@@ -119,7 +160,7 @@
     </table>
   </div>
 
-  <!-- 3. Google 日曆行程區塊 (直接給定最小高度撐開空間) -->
+  <!-- 3. Google 日曆與 Task 區塊 (拉大高度，支援彩顯與黑白標籤) -->
   <div class="kindle-box" style="min-height: 220px;">
     <div style="font-size: 22px; font-weight: 900; border-bottom: 3px solid #000000; padding-bottom: 6px; margin-bottom: 8px;">
       📅 Google 日曆與 Task 預約行程 (未來 5 天內)
@@ -129,7 +170,7 @@
     </ul>
   </div>
 
-  <!-- 4. 未來 7 天天氣預報 -->
+  <!-- 4. 未來 7 天天氣預報 (加大行高填滿底部) -->
   <div class="kindle-box">
     <div style="font-size: 22px; font-weight: 900; border-bottom: 3px solid #000000; padding-bottom: 4px; margin-bottom: 6px;">
       未來 7 天天氣預報
@@ -170,9 +211,7 @@
 
   <script>
     var lat = 53.456, lon = -2.115; // Denton, UK
-    
-    // 你的 GAS 專屬網址
-    var gasUrl = 'https://script.google.com/macros/s/AKfycbxSkJxbWRrHrCfMnfeGEivv_S5K0NS8Q9iNL4iPPCYjaSs7r3cFUIA0VoVANJSx4rnykA/exec';
+    var gasUrl = 'https://script.google.com/macros/s/AKfycbznwqGGC7sr-a6XSgsUdXye6V-qyBxcTbBMLESGS7YlTCwD1Kpmma-Y6wtWFbpQL9R_bg/exec';
 
     function padZero(num) { return num < 10 ? '0' + num : '' + num; }
 
@@ -211,13 +250,12 @@
       document.getElementById('clock-sydney').innerText = calcTZTime(10);
     }
 
-    // 全域 JSONP 回調 Function (解決 Kindle CORS 跨域限制)
+    // 全域 JSONP 回呼（相容舊版 Kindle）
     window.onCalendarDataLoaded = function(data) {
       var eventsList = data.events ? data.events : data;
       renderCalendarEvents(eventsList);
     };
 
-    // 使用 JSONP (<script> 標籤) 抓取 GAS 資料，100% 繞過 Kindle 舊瀏覽器的 CORS 限制
     function fetchAllCalendars() {
       var oldScript = document.getElementById('gas-jsonp-script');
       if (oldScript) {
@@ -231,7 +269,7 @@
       
       script.src = fetchUrl;
       script.onerror = function() {
-        document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 載入日曆失敗 (JSONP 請求被阻擋)</li>';
+        document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 載入日曆失敗 (JSONP 請求被阻擋，請確認 GAS 已更新部署為新版本)</li>';
       };
 
       document.body.appendChild(script);
@@ -247,7 +285,6 @@
       var todayDay = londonDate.getDate();
 
       var html = '';
-      // 顯示最多 8 筆，充份利用版面空間
       for (var i = 0; i < events.length && i < 8; i++) {
         var ev = events[i];
         var isToday = (ev.day === todayDay);
@@ -260,25 +297,35 @@
           dateStr += '(全天) ';
         }
 
-        html += '<li class="calendar-item">• ' + dateStr + (ev.summary || '未命名行程') + '</li>';
+        // 判斷類型渲染標籤 (彩色機上顯示粉藍/粉綠背景，舊黑白機上變純框線標籤)
+        var tagHtml = '';
+        if (ev.type === 'task') {
+          tagHtml = '<span class="tag tag-task">☑️ Task</span>';
+        } else {
+          tagHtml = '<span class="tag tag-event">🗓️ 日曆</span>';
+        }
+
+        var cleanSummary = (ev.summary || '未命名行程').replace(/^☑️\s*/, '');
+
+        html += '<li class="calendar-item">' + tagHtml + dateStr + cleanSummary + '</li>';
       }
 
       document.getElementById('calendar-events-list').innerHTML = html;
     }
 
     function getWeatherText(code) {
-      if (code === 0) return '[晴] 陽光';
-      if (code === 1) return '[晴] 天晴';
-      if (code === 2) return '[雲] 多雲';
-      if (code === 3) return '[雲] 密雲';
-      if (code === 45 || code === 48) return '[霧] 局地有霧';
-      if (code >= 51 && code <= 55) return '[雨] 毛毛雨';
-      if (code >= 61 && code <= 63) return '[雨] 局部有陣雨';
-      if (code === 65) return '[雨] 中至大陣雨';
-      if (code >= 71 && code <= 77) return '[雪] 飄雪或積雪';
-      if (code >= 80 && code <= 82) return '[雨] 短暫局部雨';
-      if (code >= 95) return '[雷] 雷暴及陣雨';
-      return '[陰] 多雲有陰';
+      if (code === 0) return '☀️ [晴] 陽光普照';
+      if (code === 1) return '🌤️ [晴] 大致天晴';
+      if (code === 2) return '⛅ [雲] 晴間多雲';
+      if (code === 3) return '☁️ [雲] 密雲有陰';
+      if (code === 45 || code === 48) return '🌫️ [霧] 局地有霧';
+      if (code >= 51 && code <= 55) return '🌧️ [雨] 輕微毛毛雨';
+      if (code >= 61 && code <= 63) return '🌧️ [雨] 局部有陣雨';
+      if (code === 65) return '🌧️ [雨] 中至大陣雨';
+      if (code >= 71 && code <= 77) return '❄️ [雪] 飄雪或積雪';
+      if (code >= 80 && code <= 82) return '🌧️ [雨] 短暫局部雨';
+      if (code >= 95) return '⛈️ [雷] 雷暴及陣雨';
+      return '☁️ [陰] 多雲有陰';
     }
 
     function fetchWeather() {
