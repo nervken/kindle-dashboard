@@ -267,12 +267,12 @@
     }
 
     function getWeatherText(code) {
-      if (code === 0) return '[晴] 陽光普照';
-      if (code === 1) return '[晴] 大致天晴';
-      if (code === 2) return '[雲] 晴間多雲';
-      if (code === 3) return '[雲] 密雲有陰';
+      if (code === 0) return '[晴] 陽光';
+      if (code === 1) return '[晴] 天晴';
+      if (code === 2) return '[雲] 多雲';
+      if (code === 3) return '[雲] 密雲';
       if (code === 45 || code === 48) return '[霧] 局地有霧';
-      if (code >= 51 && code <= 55) return '[雨] 輕微毛毛雨';
+      if (code >= 51 && code <= 55) return '[雨] 毛毛雨';
       if (code >= 61 && code <= 63) return '[雨] 局部有陣雨';
       if (code === 65) return '[雨] 中至大陣雨';
       if (code >= 71 && code <= 77) return '[雪] 飄雪或積雪';
