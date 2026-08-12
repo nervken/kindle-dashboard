@@ -9,8 +9,8 @@
   html, body {
     width: 100%;
     height: 100%;
-    background-color: #ffffff;
-    color: #000000;
+    background-color: #f8f9fa;
+    color: #1a1a1a;
     font-family: Arial, "Heiti TC", "Microsoft JhengHei", sans-serif;
     -webkit-text-size-adjust: none;
   }
@@ -22,11 +22,13 @@
   }
 
   .kindle-box {
-    border: 4px solid #000000;
+    border: 3px solid #2b2b2b;
+    border-radius: 6px;
     padding: 10px;
     margin-bottom: 12px;
     width: 100%;
     background: #ffffff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   }
 
   .time-large {
@@ -34,19 +36,21 @@
     font-weight: 900;
     line-height: 0.85;
     letter-spacing: -3px;
+    color: #0d47a1; /* 彩色機：深藍色大時鐘 */
   }
 
   table { width: 100%; border-collapse: collapse; }
 
   .data-table td {
-    border: 2px solid #000000;
+    border: 2px solid #333333;
     padding: 8px 6px;
     font-size: 20px;
     font-weight: 900;
+    background-color: #f1f8e9; /* 彩色機：清爽淡綠底色 */
   }
 
   .forecast-table td {
-    border-bottom: 2px solid #000000;
+    border-bottom: 2px solid #e0e0e0;
     padding: 10px 4px;
     font-size: 20px;
     font-weight: 900 !important;
@@ -62,7 +66,7 @@
     font-size: 20px;
     font-weight: 900;
     padding: 8px 4px;
-    border-bottom: 2px dashed #000000;
+    border-bottom: 2px dashed #b0bec5;
     word-break: break-all;
     display: flex;
     align-items: center;
@@ -71,60 +75,70 @@
     border-bottom: none;
   }
 
-  /* --- 針對彩色螢幕與黑白 Kindle 的雙模樣式設計 --- */
-  
-  /* 預設彩色螢幕樣式 (新版彩屏閱讀器 / 手機 / 電腦) */
+  /* --- 彩色閱讀器專屬標籤與色彩對比系統 --- */
   .tag {
     display: inline-block;
-    padding: 2px 6px;
-    border-radius: 4px;
+    padding: 3px 8px;
+    border-radius: 12px;
     font-size: 16px;
-    margin-right: 6px;
+    margin-right: 8px;
     font-weight: bold;
+    white-space: nowrap;
   }
+  
+  /* 日曆行程：柔和天空藍 */
   .tag-event {
     background-color: #e3f2fd;
-    color: #0d47a1;
-    border: 1px solid #90caf9;
+    color: #1565c0;
+    border: 1.5px solid #90caf9;
   }
+  
+  /* Task 待辦事項：質感森林綠 */
   .tag-task {
     background-color: #e8f5e9;
-    color: #1b5e20;
-    border: 1px solid #a5d6a7;
-  }
-  .weather-icon {
-    display: inline-block;
-    margin-right: 4px;
+    color: #2e7d32;
+    border: 1.5px solid #a5d6a7;
   }
 
-  /* 舊版單色 E-ink (Kindle) 自動降級：強制高對比黑白，防止色彩轉換成淡灰色筆劃不清 */
+  /* 天氣狀況彩色文字標示 */
+  .weather-sunny { color: #e65100; } /* 晴天：橘金 */
+  .weather-cloudy { color: #455a64; } /* 多雲：石灰藍 */
+  .weather-rainy { color: #0277bd; } /* 雨天：海洋藍 */
+
+  /* --- 舊版單色 Kindle (黑白 E-ink) 自動高對比相容 --- */
   @media monochrome, (max-monochrome: 8) {
-    .kindle-box { border-color: #000000 !important; }
+    body { background-color: #ffffff !important; color: #000000 !important; }
+    .kindle-box { border: 4px solid #000000 !important; border-radius: 0 !important; box-shadow: none !important; }
+    .time-large { color: #000000 !important; }
+    .data-table td { background-color: #ffffff !important; border-color: #000000 !important; }
+    .forecast-table td { border-bottom-color: #000000 !important; }
+    .calendar-item { border-bottom-color: #000000 !important; }
     .tag {
       background-color: transparent !important;
       color: #000000 !important;
-      border: 1.5px solid #000000 !important;
+      border: 2px solid #000000 !important;
       border-radius: 0 !important;
     }
+    .weather-sunny, .weather-cloudy, .weather-rainy { color: #000000 !important; }
   }
 </style>
 </head>
 <body>
 
   <!-- 1. 頂部頁眉 -->
-  <div style="border-bottom: 5px solid #000000; padding-bottom: 6px; margin-bottom: 8px;">
+  <div style="border-bottom: 5px solid #2b2b2b; padding-bottom: 6px; margin-bottom: 8px;">
     <table>
       <tr>
         <td style="vertical-align: bottom; width: 55%;">
           <div class="time-large" id="current-time">--:--</div>
-          <div id="current-date" style="font-size: 24px; font-weight: 900; margin-top: 6px;">----年--月--日</div>
+          <div id="current-date" style="font-size: 24px; font-weight: 900; margin-top: 6px; color: #37474f;">----年--月--日</div>
         </td>
         <td style="text-align: right; vertical-align: bottom; width: 45%;">
-          <div style="border: 3px solid #000000; padding: 4px 8px; font-size: 20px; font-weight: 900; display: inline-block; margin-bottom: 4px;">
-            [地點] <span id="location-name">英國 Denton</span>
+          <div style="border: 3px solid #2b2b2b; background: #fff3e0; color: #e65100; padding: 4px 8px; font-size: 20px; font-weight: 900; display: inline-block; margin-bottom: 4px; border-radius: 4px;">
+            📍 <span id="location-name">英國 Denton</span>
           </div>
           <div>
-            <span id="header-temp" style="font-size: 42px; font-weight: 900;">--°C</span>
+            <span id="header-temp" style="font-size: 42px; font-weight: 900; color: #d84315;">--°C</span>
           </div>
         </td>
       </tr>
@@ -133,16 +147,16 @@
 
   <!-- 2. 今日天氣實況 -->
   <div class="kindle-box">
-    <div style="font-size: 22px; font-weight: 900; border-bottom: 3px solid #000000; padding-bottom: 4px; margin-bottom: 6px;">
+    <div style="font-size: 22px; font-weight: 900; border-bottom: 3px solid #2b2b2b; padding-bottom: 4px; margin-bottom: 6px; color: #1565c0;">
       ☀️ 今日天氣實況
     </div>
     
     <table style="margin-bottom: 6px;">
       <tr>
-        <td style="font-size: 60px; font-weight: 900; width: 35%;" id="main-temp">--°C</td>
+        <td style="font-size: 60px; font-weight: 900; width: 35%; color: #c62828;" id="main-temp">--°C</td>
         <td style="text-align: right; font-size: 20px; font-weight: 900; width: 65%; line-height: 1.3;">
           <div id="main-condition-text" style="font-size: 24px; font-weight: 900; margin-bottom: 2px;">載入中...</div>
-          <div>最高: <span id="temp-max">--</span> / 最低: <span id="temp-min">--</span></div>
+          <div>最高: <span id="temp-max" style="color:#c62828;">--</span> / 最低: <span id="temp-min" style="color:#1565c0;">--</span></div>
           <div>體感溫度: <span id="apparent-temp">--</span></div>
         </td>
       </tr>
@@ -150,19 +164,19 @@
 
     <table class="data-table">
       <tr>
-        <td style="width: 50%;">降雨機率: <span id="rain-chance">--%</span></td>
-        <td style="width: 50%;">相對濕度: <span id="humidity">--%</span></td>
+        <td style="width: 50%;">☔ 降雨機率: <span id="rain-chance">--%</span></td>
+        <td style="width: 50%;">💧 相對濕度: <span id="humidity">--%</span></td>
       </tr>
       <tr>
         <td>風速: <span id="wind-speed">-- km/h</span></td>
-        <td>預計日出: <span id="sun-time">--:--</span></td>
+        <td>🌅 預計日出: <span id="sun-time">--:--</span></td>
       </tr>
     </table>
   </div>
 
-  <!-- 3. Google 日曆與 Task 區塊 (拉大高度，支援彩顯與黑白標籤) -->
+  <!-- 3. Google 日曆與 Task 區塊 -->
   <div class="kindle-box" style="min-height: 220px;">
-    <div style="font-size: 22px; font-weight: 900; border-bottom: 3px solid #000000; padding-bottom: 6px; margin-bottom: 8px;">
+    <div style="font-size: 22px; font-weight: 900; border-bottom: 3px solid #2b2b2b; padding-bottom: 6px; margin-bottom: 8px; color: #2e7d32;">
       📅 Google 日曆與 Task 預約行程 (未來 5 天內)
     </div>
     <ul class="calendar-list" id="calendar-events-list">
@@ -170,9 +184,9 @@
     </ul>
   </div>
 
-  <!-- 4. 未來 7 天天氣預報 (加大行高填滿底部) -->
+  <!-- 4. 未來 7 天天氣預報 -->
   <div class="kindle-box">
-    <div style="font-size: 22px; font-weight: 900; border-bottom: 3px solid #000000; padding-bottom: 4px; margin-bottom: 6px;">
+    <div style="font-size: 22px; font-weight: 900; border-bottom: 3px solid #2b2b2b; padding-bottom: 4px; margin-bottom: 6px; color: #4e342e;">
       未來 7 天天氣預報
     </div>
     <table class="forecast-table">
@@ -183,19 +197,19 @@
   </div>
 
   <!-- 5. 世界城市時間 -->
-  <div class="kindle-box" style="margin-bottom: 0;">
-    <div style="font-size: 18px; font-weight: 900; border-bottom: 2px solid #000000; margin-bottom: 4px; padding-bottom: 2px;">
-      世界主要城市時間
+  <div class="kindle-box" style="margin-bottom: 0; background: #fafafa;">
+    <div style="font-size: 18px; font-weight: 900; border-bottom: 2px solid #2b2b2b; margin-bottom: 4px; padding-bottom: 2px; color: #37474f;">
+      🌐 世界主要城市時間
     </div>
     <table style="text-align: center; font-size: 18px; font-weight: 900;">
-      <tr style="font-size: 16px; color: #000;">
+      <tr style="font-size: 16px; color: #555;">
         <td style="width: 20%;">倫敦</td>
         <td style="width: 20%;">香港</td>
         <td style="width: 20%;">紐約</td>
         <td style="width: 20%;">東京</td>
         <td style="width: 20%;">雪梨</td>
       </tr>
-      <tr style="font-size: 22px; font-weight: 900; height: 30px; vertical-align: middle;">
+      <tr style="font-size: 22px; font-weight: 900; height: 30px; vertical-align: middle; color: #0d47a1;">
         <td id="clock-london">--:--</td>
         <td id="clock-hk">--:--</td>
         <td id="clock-ny">--:--</td>
@@ -205,7 +219,7 @@
     </table>
   </div>
 
-  <div style="font-size: 12px; font-weight: 900; margin-top: 4px; text-align: right;">
+  <div style="font-size: 12px; font-weight: 900; margin-top: 4px; text-align: right; color: #78909c;">
     最後更新時間: <span id="update-time">--:--</span>
   </div>
 
@@ -269,7 +283,7 @@
       
       script.src = fetchUrl;
       script.onerror = function() {
-        document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 載入日曆失敗 (JSONP 請求被阻擋，請確認 GAS 已更新部署為新版本)</li>';
+        document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 載入日曆失敗 (JSONP 請求被阻擋)</li>';
       };
 
       document.body.appendChild(script);
@@ -288,7 +302,7 @@
       for (var i = 0; i < events.length && i < 8; i++) {
         var ev = events[i];
         var isToday = (ev.day === todayDay);
-        var prefix = isToday ? '[今日] ' : '';
+        var prefix = isToday ? '<span style="color:#d84315;">[今日]</span> ' : '';
 
         var dateStr = prefix + ev.month + '/' + ev.day + ' ';
         if (ev.isTime && ev.timeStr) {
@@ -297,7 +311,6 @@
           dateStr += '(全天) ';
         }
 
-        // 判斷類型渲染標籤 (彩色機上顯示粉藍/粉綠背景，舊黑白機上變純框線標籤)
         var tagHtml = '';
         if (ev.type === 'task') {
           tagHtml = '<span class="tag tag-task">☑️ Task</span>';
@@ -314,18 +327,18 @@
     }
 
     function getWeatherText(code) {
-      if (code === 0) return '☀️ [晴] 陽光普照';
-      if (code === 1) return '🌤️ [晴] 大致天晴';
-      if (code === 2) return '⛅ [雲] 晴間多雲';
-      if (code === 3) return '☁️ [雲] 密雲有陰';
-      if (code === 45 || code === 48) return '🌫️ [霧] 局地有霧';
-      if (code >= 51 && code <= 55) return '🌧️ [雨] 輕微毛毛雨';
-      if (code >= 61 && code <= 63) return '🌧️ [雨] 局部有陣雨';
-      if (code === 65) return '🌧️ [雨] 中至大陣雨';
-      if (code >= 71 && code <= 77) return '❄️ [雪] 飄雪或積雪';
-      if (code >= 80 && code <= 82) return '🌧️ [雨] 短暫局部雨';
-      if (code >= 95) return '⛈️ [雷] 雷暴及陣雨';
-      return '☁️ [陰] 多雲有陰';
+      if (code === 0) return '<span class="weather-sunny">☀️ [晴] 陽光普照</span>';
+      if (code === 1) return '<span class="weather-sunny">🌤️ [晴] 大致天晴</span>';
+      if (code === 2) return '<span class="weather-cloudy">⛅ [雲] 晴間多雲</span>';
+      if (code === 3) return '<span class="weather-cloudy">☁️ [雲] 密雲有陰</span>';
+      if (code === 45 || code === 48) return '<span class="weather-cloudy">🌫️ [霧] 局地有霧</span>';
+      if (code >= 51 && code <= 55) return '<span class="weather-rainy">🌧️ [雨] 輕微毛毛雨</span>';
+      if (code >= 61 && code <= 63) return '<span class="weather-rainy">🌧️ [雨] 局部有陣雨</span>';
+      if (code === 65) return '<span class="weather-rainy">🌧️ [雨] 中至大陣雨</span>';
+      if (code >= 71 && code <= 77) return '<span class="weather-rainy">❄️ [雪] 飄雪或積雪</span>';
+      if (code >= 80 && code <= 82) return '<span class="weather-rainy">🌧️ [雨] 短暫局部雨</span>';
+      if (code >= 95) return '<span class="weather-rainy">⛈️ [雷] 雷暴及陣雨</span>';
+      return '<span class="weather-cloudy">☁️ [陰] 多雲有陰</span>';
     }
 
     function fetchWeather() {
@@ -352,7 +365,7 @@
       document.getElementById('main-temp').innerText = Math.round(cur.temperature_2m) + '°C';
       
       var condText = getWeatherText(cur.weather_code);
-      document.getElementById('main-condition-text').innerText = condText;
+      document.getElementById('main-condition-text').innerHTML = condText;
 
       document.getElementById('temp-max').innerText = Math.round(daily.temperature_2m_max[0]) + '°C';
       document.getElementById('temp-min').innerText = Math.round(daily.temperature_2m_min[0]) + '°C';
@@ -378,10 +391,10 @@
         var dName = d === 0 ? '今天' : daysMap[dt.getDay()];
         
         html += '<tr class="forecast-row">';
-        html += '<td style="width: 28%; font-weight: 900;"><b>' + dName + '</b> <span style="font-size:18px; font-weight:900;">(' + month + '/' + day + ')</span></td>';
+        html += '<td style="width: 28%; font-weight: 900;"><b>' + dName + '</b> <span style="font-size:18px; font-weight:900; color:#555;">(' + month + '/' + day + ')</span></td>';
         html += '<td style="width: 38%; font-weight: 900;"><b>' + getWeatherText(daily.weather_code[d]) + '</b></td>';
-        html += '<td style="width: 17%; font-weight: 900;"><b>降雨 ' + (daily.precipitation_probability_max[d]||0) + '%</b></td>';
-        html += '<td style="width: 17%; text-align:right; font-weight: 900;"><b>' + Math.round(daily.temperature_2m_max[d]) + '° / ' + Math.round(daily.temperature_2m_min[d]) + '°C</b></td>';
+        html += '<td style="width: 17%; font-weight: 900; color:#0277bd;"><b>降雨 ' + (daily.precipitation_probability_max[d]||0) + '%</b></td>';
+        html += '<td style="width: 17%; text-align:right; font-weight: 900;"><span style="color:#c62828;">' + Math.round(daily.temperature_2m_max[d]) + '°</span> / <span style="color:#1565c0;">' + Math.round(daily.temperature_2m_min[d]) + '°C</span></td>';
         html += '</tr>';
       }
       document.getElementById('forecast-body').innerHTML = html;
