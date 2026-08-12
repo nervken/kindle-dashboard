@@ -211,27 +211,32 @@
       document.getElementById('clock-sydney').innerText = calcTZTime(10);
     }
 
+    window.onCalendarDataLoaded = function(data) {
+      var eventsList = data.events ? data.events : data;
+      renderCalendarEvents(eventsList);
+    };
+    
     function fetchAllCalendars() {
-      var fetchUrl = gasUrl + (gasUrl.indexOf('?') !== -1 ? '&' : '?') + '_t=' + new Date().getTime();
-      var xhr = new XMLHttpRequest();
-      xhr.open('GET', fetchUrl, true);
+      // 移除舊的 script 標籤 (若存在)
+      var oldScript = document.getElementById('gas-jsonp-script');
+      if (oldScript) {
+        oldScript.parentNode.removeChild(oldScript);
+      }
+    
+      // 建立新的 script 標籤發送 JSONP 請求
+      var script = document.createElement('script');
+      script.id = 'gas-jsonp-script';
       
-      xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4) {
-          // Kindle 瀏覽器處理 302 重導向時，status 有時會變成 0 或 302 但實際上已拿到資料
-          if (xhr.status === 200 || (xhr.status === 0 && xhr.responseText)) {
-            try {
-              var response = JSON.parse(xhr.responseText);
-              var eventsList = response.events ? response.events : response;
-              renderCalendarEvents(eventsList);
-            } catch(e) {
-              document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 解析 JSON 失敗</li>';
-            }
-          } else {
-            document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 讀取日曆數據失敗 (HTTP ' + xhr.status + ')</li>';
-          }
-        }
+      var fetchUrl = gasUrl + (gasUrl.indexOf('?') !== -1 ? '&' : '?') + 
+                     'callback=onCalendarDataLoaded&_t=' + new Date().getTime();
+      
+      script.src = fetchUrl;
+      script.onerror = function() {
+        document.getElementById('calendar-events-list').innerHTML = '<li class="calendar-item">• 載入日曆失敗 (Script Error)</li>';
       };
+    
+      document.body.appendChild(script);
+    }
     
       // 增加錯誤捕捉處理
       xhr.onerror = function() {
